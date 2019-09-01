@@ -1,0 +1,87 @@
+
+
+ps:新加景区与评论的关系(实体)
+
+discuss
+评论表：	discuss_id 评论ID
+	user_name  用户名字
+	scenic_id 景区id（文章id）
+	d_content 内容
+	d_time
+
+
+reply
+回复表：reply_id  回复ID
+	breply_name  被回复姓名
+	discuss_id 评论ID
+	r_content  内容
+	user_name 用户名
+	r_time 
+	
+
+评论表的景区id  搭建区别那个景区的桥梁
+回复表的评论id  搭建区别那条评论的桥梁
+回复表的被回复id 搭建区别被回复人是谁（你回复那个人的id）
+
+回复表的被回复id 搭建区别被回复人是谁（上一条回复的ID reply_id ）
+
+A发表评论
+	B回复A的评论(A属于被回复)
+	C回复B的评论(B属于被回复)
+
+
+查询景区中的评论（传景区id）
+select d_content from discuss where scenic_id = (select scenic_id from discuss); 
+
+查询评论中的回复（传评论id）
+select * from reply where discuss_id = #{discuss_id}
+
+一对多 根据评论ID查询一条评论对应的多条回复
+@Select("select * from discuss where discuss_id = #{discuss_id}")
+		@Results({
+			@Result(column="discuss_id", property="discuss_id"),
+			@Result(column="discuss_id",property="replyList",
+					many=@Many	(select="com.zjjyd.mapper.ReplyMapper.SelectReplyId"))
+		})
+
+一对多 根据评论ID查询一条评论对应的多条回复
+@Select("select * from discuss")
+		@Results({
+			@Result(column="discuss_id",property="discuss_id"),
+			@Result(column="discuss_id",property="replyList",
+					many=@Many	(select="com.zjjyd.mapper.ReplyMapper.SelectReplyId"))
+		})
+
+添加评论
+insert into discuss(user_id,scenic_id,d_content,d_time) VALUES(1,1,'我是第二条测试评论',SYSDATE());
+
+添加回复
+insert into reply(breply_id,discuss_id,r_content,r_time)values(2,1,'我是回复第一条评论的用户二',SYSDATE());
+
+文章评论回复流程：
+	查绚：获取文章ID->根据文章ID查绚评论->一对多(根据评论ID查绚评论)
+		->根据评论ID查绚回复)
+	添加评论：添加评论->在评论实体中有文章ID->根据文章ID查绚评论
+	添加回复：添加回复->在回复实体中有评论ID->根据评论ID查绚文章->转发时
+		   ->通过景区ID查绚多评论根据评论查多回复
+
+ps:刚进入页面 如何把数据带出来  根据景区ID findDiscuss.action?scenic_id=1
+
+浏览器：redirect:/findDiscuss.action?scenic_id="+dis.getScenic_id();  给一个ID查绚所有数据
+
+回复框遍历出多个：当回复第一条评论时，被回复人是评论表中用户名。当回复第一条回复时，被回复人是回复表的被回复人。所以要用两个框输入
+解决方法用jquery里面的next属性
+
+
+
+需要遍历的数据用from表单传输：
+	表单数据—>传入后台—>转发回jsp即可
+需要遍历的数据用ajax传输：
+	ajax数据—>传入后台—>先把数据存入域中—>再ajax回调里面刷新location.reload()
+ajax第二种方法：
+	ajax数据—>传入后台—>把数据回调—>再在ajax里面写要值的HTML代码		
+	
+
+
+
+	
